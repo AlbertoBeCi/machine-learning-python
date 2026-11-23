@@ -74,10 +74,22 @@ DATABASE_URL="postgresql://my_user:my_password@localhost:5432/my_database"
 
 ## Running the Application
 
-To run the application, execute the app.py script from the root directory of the project:
+To run the full application from the root directory of the project (using the local virtual environment):
 
 ```bash
-python src/app.py
+.venv\Scripts\python.exe src\app.py
+```
+
+To run a quick end-to-end test on CPU (for example, 1 epoch with 10 batches per stage):
+
+```bash
+.venv\Scripts\python.exe src\app.py --epochs 1 --steps-per-epoch 10 --validation-steps 10 --eval-steps 10
+```
+
+To predict whether a single photo is a cat or a dog using the saved model:
+
+```bash
+.venv\Scripts\python.exe src\predict.py path\to\your_photo.jpg
 ```
 
 ## Adding Models

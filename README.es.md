@@ -74,10 +74,22 @@ DATABASE_URL="postgresql://mi_usuario:mi_contraseña@localhost:5432/mi_base_de_d
 
 ## Ejecutando la Aplicación
 
-Para ejecutar la aplicación, ejecuta el script app.py desde la raíz del directorio del proyecto:
+Para ejecutar la aplicación completa desde la raíz del directorio del proyecto (usando el entorno virtual local):
 
 ```bash
-python src/app.py
+.venv\Scripts\python.exe src\app.py
+```
+
+Para realizar una prueba rápida del flujo completo en CPU (por ejemplo, 1 época con 10 lotes por etapa):
+
+```bash
+.venv\Scripts\python.exe src\app.py --epochs 1 --steps-per-epoch 10 --validation-steps 10 --eval-steps 10
+```
+
+Para predecir si una foto individual es perro o gato usando el modelo guardado:
+
+```bash
+.venv\Scripts\python.exe src\predict.py ruta\a\tu_foto.jpg
 ```
 
 ## Añadiendo Modelos
