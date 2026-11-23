@@ -1,124 +1,100 @@
-# Data Science Project Boilerplate
+# 🐶🐱 Dogs vs Cats — Image Classification System
 
-This boilerplate is designed to kickstart data science projects by providing a basic setup for database connections, data processing, and machine learning model development. It includes a structured folder organization for your datasets and a set of pre-defined Python packages necessary for most data science tasks.
+![Dogs vs Cats Image Classifier](assets/dogs_vs_cats_banner.png)
 
-## Structure
+Binary image classifier (**Cat** vs **Dog**) built with **TensorFlow / Keras** and **EfficientNet-B0** on the **Asirra (Dogs vs Cats)** dataset (25,000 labeled `.jpg` photos). Includes automated dataset splitting, sample visualization, `ImageDataGenerator` streaming, `ModelCheckpoint` & `EarlyStopping` callbacks, Transfer Learning support, and a CLI tool to classify any single image.
 
-The project is organized as follows:
+---
 
-- **`src/app.py`** → Main Python script where your project will run.
-- **`src/explore.ipynb`** → Notebook for exploration and testing. Once exploration is complete, migrate the clean code to `app.py`.
-- **`src/utils.py`** → Auxiliary functions, such as database connection.
-- **`requirements.txt`** → List of required Python packages.
-- **`models/`** → Will contain your SQLAlchemy model classes.
-- **`data/`** → Stores datasets at different stages:
-  - **`data/raw/`** → Raw data.
-  - **`data/interim/`** → Temporarily transformed data.
-  - **`data/processed/`** → Data ready for analysis.
+## ✨ Key Features & Results
 
+- **Dataset**: 25,000 images split **80% train** (`20,000`) / **20% test** (`5,000`), resized on the fly to `224×224×3`.
+- **Architecture**: `EfficientNetB0(include_top=False)` → `GlobalAveragePooling2D` → `Dense(128, relu)` → `Dense(2, softmax)`.
+- **Optimization**: `ModelCheckpoint` (saves best `val_accuracy`) + `EarlyStopping` (`patience=3`, restores best weights).
+- **Test Performance** (Transfer Learning with `--weights imagenet --freeze-base`, 3 epochs):
+  - **Accuracy**: `98.92%` (`4,946 / 5,000` correct on full test set)
+  - **Loss**: `0.0305`
 
-## ⚡ Initial Setup in Codespaces (Recommended)
+---
 
-No manual setup is required, as **Codespaces is automatically configured** with the predefined files created by the academy for you. Just follow these steps:
+## 📁 Project Structure
 
-1. **Wait for the environment to configure automatically**.
-   - All necessary packages and the database will install themselves.
-   - The automatically created `username` and `db_name` are in the **`.env`** file at the root of the project.
-2. **Once Codespaces is ready, you can start working immediately**.
+- **`src/pipeline.py`** → Modular functions for splitting data, plotting samples, creating `ImageDataGenerator` flows, building/training/evaluating `EfficientNetB0`, and single-image inference.
+- **`src/app.py`** → Main CLI script for training, optimizing, evaluating, and saving the model.
+- **`src/predict.py`** → CLI script to classify a single photo (`Gato` / `Perro`) with confidence scores.
+- **`src/explore.ipynb`** → Interactive Jupyter notebook following the project steps.
+- **`src/utils.py`** → Auxiliary database connection utilities (`db_connect`).
+- **`data/`** → `raw/` (original zip & extracted images), `interim/` (`sample_dogs.png`, `sample_cats.png`), and `processed/` (`train/` and `test/` class folders).
+- **`models/`** → Saved `.keras` checkpoints and final model.
 
+---
 
-## 💻 Local Setup (Only if you can't use Codespaces)
+## 💻 Local Setup
 
-**Prerequisites**
+### 1. Virtual Environment & Dependencies (Python 3.11+)
 
-Make sure you have Python 3.11+ installed on your machine. You will also need pip to install the Python packages.
+```powershell
+uv venv .venv --python 3.13 --seed
+uv pip install -r requirements.txt ipykernel --python .venv\Scripts\python.exe
+```
 
-**Installation**
-
-Clone the project repository to your local machine.
-
-Navigate to the project directory and install the required Python packages:
+Or with standard `pip`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Create a database (if necessary)**
+### 2. Environment Variables (Optional DB)
 
-Create a new database within the Postgres engine by customizing and executing the following command:
+Create a `.env` file in the root directory if using PostgreSQL (e.g. via Docker):
 
-```bash
-$ psql -U postgres -c "DO \$\$ BEGIN 
-    CREATE USER my_user WITH PASSWORD 'my_password'; 
-    CREATE DATABASE my_database OWNER my_user; 
-END \$\$;"
-```
-Connect to the Postgres engine to use your database, manipulate tables, and data:
-
-```bash
-$ psql -U my_user -d my_database
+```env
+DATABASE_URL="postgresql+psycopg2://gitpod:postgres@localhost:5432/sample-db"
 ```
 
-Once inside PSQL, you can create tables, run queries, insert, update, or delete data, and much more!
+---
 
-**Environment Variables**
+## 🚀 Usage
 
-Create a .env file in the root directory of the project to store your environment variables, such as your database connection string:
+### Train & Evaluate the Model
 
-```makefile
-DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>"
+Full training from scratch (`weights=None`, 10 epochs):
 
-#example
-DATABASE_URL="postgresql://my_user:my_password@localhost:5432/my_database"
-```
-
-## Running the Application
-
-To run the full application from the root directory of the project (using the local virtual environment):
-
-```bash
+```powershell
 .venv\Scripts\python.exe src\app.py
 ```
 
-To run a quick end-to-end test on CPU (for example, 1 epoch with 10 batches per stage):
+Fast Transfer Learning training (`98.92%` test accuracy in a few minutes on CPU):
 
-```bash
+```powershell
+.venv\Scripts\python.exe src\app.py --weights imagenet --freeze-base --epochs 3 --steps-per-epoch 100
+```
+
+Quick pipeline smoke test on CPU:
+
+```powershell
 .venv\Scripts\python.exe src\app.py --epochs 1 --steps-per-epoch 10 --validation-steps 10 --eval-steps 10
 ```
 
-To predict whether a single photo is a cat or a dog using the saved model:
+### Classify a Single Photo
 
-```bash
+```powershell
 .venv\Scripts\python.exe src\predict.py path\to\your_photo.jpg
 ```
 
-## Adding Models
+Example output:
 
-To add SQLAlchemy model classes, create new Python script files within the models/ directory. These classes should be defined according to your database schema.
-
-Example model definition (`models/example_model.py`):
-
-```py
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-
-Base = declarative_base()
-
-class ExampleModel(Base):
-    __tablename__ = 'example_table'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
+```text
+Predicción: Perro (99.98% de confianza)
+  - Gato:  0.02%
+  - Perro: 99.98%
 ```
 
-## Working with Data
+---
 
-You can place your raw datasets in the data/raw directory, intermediate datasets in data/interim, and processed datasets ready for analysis in data/processed.
+## 🖼️ Sample Data Visualizations
 
-To process data, you can modify the app.py script to include your data processing steps, using pandas for data manipulation and analysis.
+Generated automatically in `data/interim/`:
 
-## Contributors
-
-This template was built as part of the [Data Science and Machine Learning Bootcamp](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning) by 4Geeks Academy by [Alejandro Sanchez](https://twitter.com/alesanchezr) and many other contributors. Learn more about [4Geeks Academy BootCamp programs](https://4geeksacademy.com/us/programs) here.
-
-Other templates and resources like this can be found on the school's GitHub page.
+- [`data/interim/sample_dogs.png`](data/interim/sample_dogs.png)
+- [`data/interim/sample_cats.png`](data/interim/sample_cats.png)

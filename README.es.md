@@ -1,124 +1,100 @@
-# Plantilla de Proyecto de Ciencia de Datos
+# 🐶🐱 Perros vs Gatos — Sistema de Clasificación de Imágenes
 
-Esta plantilla está diseñada para impulsar proyectos de ciencia de datos proporcionando una configuración básica para conexiones de base de datos, procesamiento de datos, y desarrollo de modelos de aprendizaje automático. Incluye una organización estructurada de carpetas para tus conjuntos de datos y un conjunto de paquetes de Python predefinidos necesarios para la mayoría de las tareas de ciencia de datos.
+![Dogs vs Cats Image Classifier](assets/dogs_vs_cats_banner.png)
 
-## Estructura
+Clasificador binario de imágenes (**Gato** vs **Perro**) construido con **TensorFlow / Keras** y **EfficientNet-B0** sobre el dataset **Asirra (Dogs vs Cats)** (25.000 fotos `.jpg` etiquetadas). Incluye división automática del dataset, visualización de muestras, carga progresiva con `ImageDataGenerator`, callbacks `ModelCheckpoint` y `EarlyStopping`, soporte para *Transfer Learning* y una herramienta CLI para clasificar cualquier foto individual.
 
-El proyecto está organizado de la siguiente manera:
+---
 
-- **`src/app.py`** → Script principal de Python donde correrá tu proyecto.
-- **`src/explore.ipynb`** → Notebook para exploración y pruebas. Una vez finalizada la exploración, migra el código limpio a `app.py`.
-- **`src/utils.py`** → Funciones auxiliares, como conexión a bases de datos.
-- **`requirements.txt`** → Lista de paquetes de Python necesarios.
-- **`models/`** → Contendrá tus clases de modelos SQLAlchemy.
-- **`data/`** → Almacena los datasets en diferentes etapas:
-  - **`data/raw/`** → Datos sin procesar.
-  - **`data/interim/`** → Datos transformados temporalmente.
-  - **`data/processed/`** → Datos listos para análisis.
+## ✨ Características y Resultados
 
+- **Dataset**: 25.000 imágenes divididas en **80% entrenamiento** (`20.000`) / **20% prueba** (`5.000`), redimensionadas al vuelo a `224×224×3`.
+- **Arquitectura**: `EfficientNetB0(include_top=False)` → `GlobalAveragePooling2D` → `Dense(128, relu)` → `Dense(2, softmax)`.
+- **Optimización**: `ModelCheckpoint` (guarda el mejor `val_accuracy`) + `EarlyStopping` (`patience=3`, restaura los mejores pesos).
+- **Rendimiento en Test** (*Transfer Learning* con `--weights imagenet --freeze-base`, 3 épocas):
+  - **Accuracy**: `98.92%` (`4.946 / 5.000` aciertos sobre todo el conjunto de test)
+  - **Loss**: `0.0305`
 
-## ⚡ Configuración Inicial en Codespaces (Recomendado)
+---
 
-No es necesario realizar ninguna configuración manual, ya que **Codespaces se configura automáticamente** con los archivos predefinidos que ha creado la academia para ti. Simplemente sigue estos pasos:
+## 📁 Estructura del Proyecto
 
-1. **Espera a que el entorno se configure automáticamente**.
-   - Todos los paquetes necesarios y la base de datos se instalarán por sí mismos.
-   - El `username` y `db_name` creados automáticamente están en el archivo **`.env`** en la raíz del proyecto.
-2. **Una vez que Codespaces esté listo, puedes comenzar a trabajar inmediatamente**.
+- **`src/pipeline.py`** → Funciones modulares para dividir el dataset, graficar muestras, crear flujos `ImageDataGenerator`, construir/entrenar/evaluar `EfficientNetB0` e inferir sobre una imagen.
+- **`src/app.py`** → Script principal CLI para entrenar, optimizar, evaluar y guardar el modelo.
+- **`src/predict.py`** → Script CLI para clasificar una foto individual (`Gato` / `Perro`) con sus porcentajes de confianza.
+- **`src/explore.ipynb`** → Notebook interactivo de Jupyter con todos los pasos del proyecto.
+- **`src/utils.py`** → Funciones auxiliares de conexión a base de datos (`db_connect`).
+- **`data/`** → `raw/` (zip original e imágenes extraídas), `interim/` (`sample_dogs.png`, `sample_cats.png`) y `processed/` (`train/` y `test/` por clase).
+- **`models/`** → Checkpoints y modelo final `.keras`.
 
+---
 
-## 💻 Configuración en Local (Solo si no puedes usar Codespaces)
+## 💻 Configuración en Local
 
-**Prerrequisitos**
+### 1. Entorno Virtual y Dependencias (Python 3.11+)
 
-Asegúrate de tener Python 3.11+ instalado en tu máquina. También necesitarás pip para instalar los paquetes de Python.
+```powershell
+uv venv .venv --python 3.13 --seed
+uv pip install -r requirements.txt ipykernel --python .venv\Scripts\python.exe
+```
 
-**Instalación**
-
-Clona el repositorio del proyecto en tu máquina local.
-
-Navega hasta el directorio del proyecto e instala los paquetes de Python requeridos:
+O usando `pip`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Crear una base de datos (si es necesario)**
+### 2. Variables de Entorno (Base de datos opcional)
 
-Crea una nueva base de datos dentro del motor Postgres personalizando y ejecutando el siguiente comando: 
+Crea un archivo `.env` en la raíz del proyecto si vas a usar PostgreSQL (por ejemplo con Docker):
 
-```bash
-$ psql -U postgres -c "DO \$\$ BEGIN 
-    CREATE USER mi_usuario WITH PASSWORD 'mi_contraseña'; 
-    CREATE DATABASE mi_base_de_datos OWNER mi_usuario; 
-END \$\$;"
-```
-Conéctate al motor Postgres para usar tu base de datos, manipular tablas y datos: 
-
-```bash
-$ psql -U mi_usuario -d mi_base_de_datos
+```env
+DATABASE_URL="postgresql+psycopg2://gitpod:postgres@localhost:5432/sample-db"
 ```
 
-¡Una vez que estés dentro de PSQL podrás crear tablas, hacer consultas, insertar, actualizar o eliminar datos y mucho más!
+---
 
-**Variables de entorno**
+## 🚀 Uso
 
-Crea un archivo .env en el directorio raíz del proyecto para almacenar tus variables de entorno, como tu cadena de conexión a la base de datos:
+### Entrenar y Evaluar el Modelo
 
-```makefile
-DATABASE_URL="postgresql://<USUARIO>:<CONTRASEÑA>@<HOST>:<PUERTO>/<NOMBRE_BD>"
+Entrenamiento completo desde cero (`weights=None`, 10 épocas):
 
-#example
-DATABASE_URL="postgresql://mi_usuario:mi_contraseña@localhost:5432/mi_base_de_datos"
-```
-
-## Ejecutando la Aplicación
-
-Para ejecutar la aplicación completa desde la raíz del directorio del proyecto (usando el entorno virtual local):
-
-```bash
+```powershell
 .venv\Scripts\python.exe src\app.py
 ```
 
-Para realizar una prueba rápida del flujo completo en CPU (por ejemplo, 1 época con 10 lotes por etapa):
+Entrenamiento rápido con *Transfer Learning* (`98.92%` de accuracy en test en pocos minutos en CPU):
 
-```bash
+```powershell
+.venv\Scripts\python.exe src\app.py --weights imagenet --freeze-base --epochs 3 --steps-per-epoch 100
+```
+
+Prueba rápida del flujo completo en CPU:
+
+```powershell
 .venv\Scripts\python.exe src\app.py --epochs 1 --steps-per-epoch 10 --validation-steps 10 --eval-steps 10
 ```
 
-Para predecir si una foto individual es perro o gato usando el modelo guardado:
+### Clasificar una Foto Individual
 
-```bash
+```powershell
 .venv\Scripts\python.exe src\predict.py ruta\a\tu_foto.jpg
 ```
 
-## Añadiendo Modelos
+Ejemplo de salida:
 
-Para añadir clases de modelos SQLAlchemy, crea nuevos archivos de script de Python dentro del directorio models/. Estas clases deben ser definidas de acuerdo a tu esquema de base de datos.
-
-Definición del modelo de ejemplo (`models/example_model.py`):
-
-```py
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-
-Base = declarative_base()
-
-class ExampleModel(Base):
-    __tablename__ = 'example_table'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
+```text
+Predicción: Perro (99.98% de confianza)
+  - Gato:  0.02%
+  - Perro: 99.98%
 ```
 
-## Trabajando con Datos
+---
 
-Puedes colocar tus conjuntos de datos brutos en el directorio data/raw, conjuntos de datos intermedios en data/interim, y los conjuntos de datos procesados listos para el análisis en data/processed.
+## 🖼️ Visualizaciones de Muestra
 
-Para procesar datos, puedes modificar el script app.py para incluir tus pasos de procesamiento de datos, utilizando pandas para la manipulación y análisis de datos.
+Generadas automáticamente en `data/interim/`:
 
-## Contribuyentes
-
-Esta plantilla fue construida como parte del [Data Science and Machine Learning Bootcamp](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning) de 4Geeks Academy por [Alejandro Sanchez](https://twitter.com/alesanchezr) y muchos otros contribuyentes. Descubre más sobre [los programas BootCamp de 4Geeks Academy](https://4geeksacademy.com/us/programs) aquí.
-
-Otras plantillas y recursos como este se pueden encontrar en la página de GitHub de la escuela.
+- [`data/interim/sample_dogs.png`](data/interim/sample_dogs.png)
+- [`data/interim/sample_cats.png`](data/interim/sample_cats.png)
