@@ -22,6 +22,7 @@ Clasificador binario de imágenes (**Gato** vs **Perro**) construido con **Tenso
 - **`src/pipeline.py`** → Funciones modulares para dividir el dataset, graficar muestras, crear flujos `ImageDataGenerator`, construir/entrenar/evaluar `EfficientNetB0` e inferir sobre una imagen.
 - **`src/app.py`** → Script principal CLI para entrenar, optimizar, evaluar y guardar el modelo.
 - **`src/predict.py`** → Script CLI para clasificar una foto individual (`Gato` / `Perro`) con sus porcentajes de confianza.
+- **`src/web.py`** y **`src/templates/index.html`** → Servidor local Flask e interfaz web para arrastrar, pegar (`Ctrl+V`) o buscar fotos en el PC.
 - **`src/explore.ipynb`** → Notebook interactivo de Jupyter con todos los pasos del proyecto.
 - **`src/utils.py`** → Funciones auxiliares de conexión a base de datos (`db_connect`).
 - **`data/`** → `raw/` (zip original e imágenes extraídas), `interim/` (`sample_dogs.png`, `sample_cats.png`) y `processed/` (`train/` y `test/` por clase).
@@ -76,11 +77,21 @@ Prueba rápida del flujo completo en CPU:
 .venv\Scripts\python.exe src\app.py --epochs 1 --steps-per-epoch 10 --validation-steps 10 --eval-steps 10
 ```
 
-### Clasificar una Foto Individual
+### Clasificar una Foto Individual (CLI)
 
 ```powershell
 .venv\Scripts\python.exe src\predict.py ruta\a\tu_foto.jpg
 ```
+
+### Levantar la Interfaz Web Local
+
+Inicia el servidor local (carga el modelo una sola vez y todo se procesa en tu PC):
+
+```powershell
+.venv\Scripts\python.exe src\web.py
+```
+
+Después abre **`http://127.0.0.1:5000`** en tu navegador para arrastrar, pegar (`Ctrl+V`) o buscar imágenes en tu ordenador.
 
 Ejemplo de salida:
 

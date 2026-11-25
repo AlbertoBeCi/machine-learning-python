@@ -280,6 +280,20 @@ def evaluate_and_save_model(
     }
 
 
+def predict_pil_image(
+    img: Image.Image,
+    model,
+    target_size: tuple[int, int] = IMG_SIZE,
+) -> tuple[str, dict[str, float]]:
+    """Predict whether a PIL image is a cat or a dog using a loaded model."""
+    resized = img.convert("RGB").resize(target_size)
+    batch = np.expand_dims(np.asarray(resized, dtype=np.float32), axis=0)
+    probs = model.predict(batch, verbose=0)[0]
+    probabilities = {cls: float(prob) for cls, prob in zip(CLASSES, probs)}
+    predicted_class = max(probabilities, key=probabilities.get)
+    return predicted_class, probabilities
+
+
 def predict_image(
     image_path: Path,
     model_path: Path,
@@ -303,12 +317,6 @@ def predict_image(
             f"No se encontró el modelo guardado: {model_path}. Entrena primero con src/app.py."
         )
 
-    with Image.open(image_path) as img:
-        resized = img.convert("RGB").resize(target_size)
-        batch = np.expand_dims(np.asarray(resized, dtype=np.float32), axis=0)
-
     model = load_model(model_path)
-    probs = model.predict(batch, verbose=0)[0]
-    probabilities = {cls: float(prob) for cls, prob in zip(CLASSES, probs)}
-    predicted_class = max(probabilities, key=probabilities.get)
-    return predicted_class, probabilities
+    with Image.open(image_path) as img:
+        return predict_pil_image(img, model, target_size=target_size)

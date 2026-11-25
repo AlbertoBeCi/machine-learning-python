@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Perro o gato? — Clasificador local</title>
+  <style>
+    @font-face {
+      font-family: "Bricolage Grotesque";
+      font-style: normal;
+      font-weight: 500 700;
+      font-display: swap;
+      src: url("/static/fonts/bricolage-grotesque-latin-ext.woff2") format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: "Bricolage Grotesque";
+      font-style: normal;
+      font-weight: 500 700;
+      font-display: swap;
+      src: url("/static/fonts/bricolage-grotesque-latin.woff2") format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: "Onest";
+      font-style: normal;
+      font-weight: 400 700;
+      font-display: swap;
+      src: url("/static/fonts/onest-latin-ext.woff2") format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: "Onest";
+      font-style: normal;
+      font-weight: 400 700;
+      font-display: swap;
+      src: url("/static/fonts/onest-latin.woff2") format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    :root {
+      --bg: #eef2f6;
+      --surface: #ffffff;
+      --mat: #e4eaf1;
+      --ink: #0f172a;
+      --muted: #475569;
+      --hairline: #dce3ec;
+      --teal: #0d6e66;
+      --teal-hover: #09524c;
+      --teal-soft: #e3f3f1;
+      --amber: #c8552d;
+      --amber-soft: #fbeee9;
+      --error: #b42318;
+      --error-soft: #fef3f2;
+      --radius: 16px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    ::selection {
+      background: var(--teal);
+      color: #ffffff;
+    }
+
+    html {
+      scrollbar-color: #c6c0b4 var(--bg);
+      scrollbar-width: thin;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Onest", system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 1020px;
+      margin-inline: auto;
+      padding-inline: clamp(1.15rem, 4vw, 2.5rem);
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      clip-path: inset(50%) !important;
+      overflow: hidden !important;
+      width: 1px !important;
+      height: 1px !important;
+      margin: -1px !important;
+      padding: 0 !important;
+      border: 0 !important;
+      white-space: nowrap !important;
+    }
+
+    header {
+      padding-block: clamp(2rem, 5vw, 3.25rem) 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem 2rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      font-size: clamp(2.1rem, 4.6vw, 3.25rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.02;
+    }
+
+    .subtitle {
+      margin: 0.65rem 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 54ch;
+    }
+
+    .local-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      background: var(--mat);
+      color: var(--ink);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .local-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    main {
+      flex: 1;
+      padding-bottom: 2.5rem;
+    }
+
+    /* Unified Studio Workbench: elevation declared once via soft shadow */
+    .workbench {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 60px -24px rgba(20, 21, 23, 0.14);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 780px) {
+      .workbench {
+        grid-template-columns: 1.15fr 0.85fr;
+        min-height: 460px;
+      }
+    }
+
+    /* Left: Interactive Photo Stage */
+    .stage {
+      position: relative;
+      background: var(--mat);
+      min-height: 340px;
+      display: grid;
+      place-items: center;
+      padding: 1.75rem;
+      cursor: pointer;
+      transition: background-color 220ms var(--ease-out);
+      overflow: hidden;
+    }
+
+    .stage:hover {
+      background: #e4dfd5;
+    }
+
+    .stage.is-dragover {
+      background: var(--teal-soft);
+    }
+
+    .stage.has-image {
+      padding: 0;
+      background: #141517;
+      cursor: default;
+    }
+
+    .viewfinder {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 290px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Precision viewfinder corner brackets */
+    .corner {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-color: #b7b0a2;
+      border-style: solid;
+      transition: border-color 220ms var(--ease-out), transform 220ms var(--ease-out);
+      pointer-events: none;
+    }
+    .corner-tl { top: 0; left: 0; border-width: 2px 0 0 2px; border-top-left-radius: 6px; }
+    .corner-tr { top: 0; right: 0; border-width: 2px 2px 0 0; border-top-right-radius: 6px; }
+    .corner-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; border-bottom-left-radius: 6px; }
+    .corner-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; border-bottom-right-radius: 6px; }
+
+    .stage:hover .corner,
+    .stage.is-dragover .corner {
+      border-color: var(--teal);
+    }
+    .stage.is-dragover .corner-tl { transform: translate(-4px, -4px); }
+    .stage.is-dragover .corner-tr { transform: translate(4px, -4px); }
+    .stage.is-dragover .corner-bl { transform: translate(-4px, 4px); }
+    .stage.is-dragover .corner-br { transform: translate(4px, 4px); }
+
+    .stage-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--surface);
+      display: grid;
+      place-items: center;
+      color: var(--teal);
+      margin-bottom: 1rem;
+      box-shadow: 0 8px 20px -8px rgba(20, 21, 23, 0.14);
+      transition: transform 220ms var(--ease-out);
+    }
+
+    .stage:hover .stage-icon {
+      transform: translateY(-2px);
+    }
+
+    .stage-title {
+      margin: 0;
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .stage-hint {
+      margin: 0.35rem 0 1.35rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .stage-img {
+      width: 100%;
+      height: 100%;
+      max-height: 520px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .stage-overlay-actions {
+      position: absolute;
+      right: 1rem;
+      bottom: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 2;
+    }
+
+    /* Buttons */
+    .btn {
+      font: inherit;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      min-height: 48px;
+      padding: 0.65rem 1.35rem;
+      border-radius: 999px;
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background-color 180ms var(--ease-out), transform 180ms var(--ease-out), color 180ms var(--ease-out);
+    }
+
+    .btn-primary {
+      background: var(--teal);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--teal-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-float {
+      min-height: 44px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      background: rgba(20, 21, 23, 0.78);
+      color: #ffffff;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-float:hover {
+      background: rgba(20, 21, 23, 0.94);
+    }
+
+    :where(button, input, a):focus-visible {
+      outline: 3px solid var(--teal);
+      outline-offset: 3px;
+    }
+
+    /* Right: Analysis Panel */
+    .inspector {
+      padding: clamp(1.5rem, 3.5vw, 2.25rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.5rem;
+      border-top: 1px solid var(--hairline);
+    }
+
+    @media (min-width: 780px) {
+      .inspector {
+        border-top: 0;
+        border-left: 1px solid var(--hairline);
+      }
+    }
+
+    .status-line {
+      margin: 0;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-line.is-error {
+      color: var(--error);
+      background: var(--error-soft);
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--hairline);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 700ms linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-guide {
+      margin-block: auto;
+      padding-block: 1.5rem;
+    }
+
+    .empty-guide h2 {
+      margin: 0 0 0.5rem;
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .empty-guide p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9375rem;
+    }
+
+    .result-block {
+      margin-block: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      animation: reveal 260ms var(--ease-out);
+    }
+
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .verdict-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .verdict-title {
+      margin: 0;
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      font-size: clamp(2.15rem, 4vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .verdict-badge {
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: var(--teal-soft);
+      color: var(--teal);
+    }
+
+    .verdict-badge.is-dog {
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .meters {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .meter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .meter-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .meter-pct {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+    }
+
+    .meter-track {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--mat);
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 420ms var(--ease-out);
+    }
+
+    .meter-fill.is-dog {
+      background: var(--amber);
+    }
+
+    .meter-fill.is-cat {
+      background: var(--teal);
+    }
+
+    .meter-fill.is-muted {
+      background: #c7c1b5;
+    }
+
+    /* Recent session history */
+    .history-wrap {
+      padding-top: 1rem;
+      border-top: 1px solid var(--hairline);
+    }
+
+    .history-label {
+      margin: 0 0 0.6rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .history-strip {
+      display: flex;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+    }
+
+    .history-chip {
+      padding: 0.25rem 0.6rem 0.25rem 0.25rem;
+      border-radius: 999px;
+      border: 1px solid var(--hairline);
+      background: var(--surface);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+
+    .history-chip:hover {
+      border-color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    .history-chip img {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+
+    footer {
+      padding-block: 0 2rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem 1.5rem;
+    }
+
+    footer code {
+      font-size: 0.82rem;
+      background: var(--mat);
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div>
+      <h1>¿Perro o gato?</h1>
+      <p class="subtitle">
+        Arrastra una imagen, búscala en tu ordenador o pégala con Ctrl+V. Todo se procesa en tu PC.
+      </p>
+    </div>
+    <span class="local-pill">
+      <span class="local-dot" aria-hidden="true"></span>
+      100% local · EfficientNet-B0
+    </span>
+  </header>
+
+  <main class="wrap">
+    <section class="workbench" aria-label="Clasificador de imágenes">
+      <input
+        type="file"
+        id="photo-input"
+        name="image"
+        accept="image/*"
+        class="visually-hidden"
+      >
+
+      <div
+        id="stage"
+        class="stage"
+        role="region"
+        aria-label="Zona para arrastrar o seleccionar una foto"
+      >
+        <div class="viewfinder" id="viewfinder">
+          <span class="corner corner-tl" aria-hidden="true"></span>
+          <span class="corner corner-tr" aria-hidden="true"></span>
+          <span class="corner corner-bl" aria-hidden="true"></span>
+          <span class="corner corner-br" aria-hidden="true"></span>
+
+          <div class="stage-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <p class="stage-title">Suelta aquí tu fotografía</p>
+          <p class="stage-hint">JPG, PNG o WebP · hasta 16 MB</p>
+          <button type="button" id="browse-btn" class="btn btn-primary">
+            Elegir foto del PC
+          </button>
+        </div>
+
+        <div class="stage-overlay-actions" id="overlay-actions" hidden>
+          <button type="button" id="change-btn" class="btn btn-float">
+            Cambiar foto
+          </button>
+          <button type="button" id="clear-btn" class="btn btn-float">
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div class="inspector">
+        <p class="status-line" id="status-line" role="status" aria-live="polite">
+          <span class="spinner" id="spinner" hidden aria-hidden="true"></span>
+          <span id="status-text">Listo para analizar una imagen.</span>
+        </p>
+
+        <div class="empty-guide" id="empty-guide">
+          <h2>Esperando tu foto</h2>
+          <p>
+            En cuanto elijas una imagen, la red neuronal evaluará sus rasgos en milisegundos y te mostrará la probabilidad de cada clase.
+          </p>
+        </div>
+
+        <div class="result-block" id="result-block" hidden>
+          <div class="verdict-row">
+            <h2 class="verdict-title" id="verdict-title">—</h2>
+            <span class="verdict-badge" id="verdict-badge">0%</span>
+          </div>
+
+          <div class="meters">
+            <div class="meter-item">
+              <div class="meter-head">
+                <span>Perro</span>
+                <span class="meter-pct" id="pct-dog">0%</span>
+              </div>
+              <div class="meter-track" aria-hidden="true">
+                <div class="meter-fill is-dog" id="bar-dog"></div>
+              </div>
+            </div>
+
+            <div class="meter-item">
+              <div class="meter-head">
+                <span>Gato</span>
+                <span class="meter-pct" id="pct-cat">0%</span>
+              </div>
+              <div class="meter-track" aria-hidden="true">
+                <div class="meter-fill is-cat" id="bar-cat"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-wrap" id="history-wrap" hidden>
+          <p class="history-label">Probadas en esta sesión</p>
+          <div class="history-strip" id="history-strip"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <span>Modelo <code>efficientnet_b0_dogs_vs_cats_final.keras</code></span>
+    <span>98.92% de precisión en test · Sin conexión externa</span>
+  </footer>
+
+  <script>
+    const input = document.getElementById("photo-input");
+    const stage = document.getElementById("stage");
+    const viewfinder = document.getElementById("viewfinder");
+    const overlayActions = document.getElementById("overlay-actions");
+    const browseBtn = document.getElementById("browse-btn");
+    const changeBtn = document.getElementById("change-btn");
+    const clearBtn = document.getElementById("clear-btn");
+
+    const setStageImage = (imageUrl) => {
+      let img = document.getElementById("stage-img");
+      if (!img) {
+        img = document.createElement("img");
+        img.id = "stage-img";
+        img.className = "stage-img";
+        img.alt = "Vista previa de la fotografía seleccionada";
+        stage.insertBefore(img, overlayActions);
+      }
+      img.src = imageUrl;
+    };
+
+    const removeStageImage = () => {
+      const img = document.getElementById("stage-img");
+      if (img) img.remove();
+    };
+
+    const statusLine = document.getElementById("status-line");
+    const statusText = document.getElementById("status-text");
+    const spinner = document.getElementById("spinner");
+    const emptyGuide = document.getElementById("empty-guide");
+    const resultBlock = document.getElementById("result-block");
+    const verdictTitle = document.getElementById("verdict-title");
+    const verdictBadge = document.getElementById("verdict-badge");
+    const barDog = document.getElementById("bar-dog");
+    const barCat = document.getElementById("bar-cat");
+    const pctDog = document.getElementById("pct-dog");
+    const pctCat = document.getElementById("pct-cat");
+    const historyWrap = document.getElementById("history-wrap");
+    const historyStrip = document.getElementById("history-strip");
+
+    const sessionHistory = [];
+
+    const setStatus = (text, { error = false, loading = false } = {}) => {
+      statusText.textContent = text;
+      statusLine.classList.toggle("is-error", error);
+      spinner.hidden = !loading;
+    };
+
+    const renderResult = (imageUrl, data, fileName) => {
+      setStageImage(imageUrl);
+      viewfinder.hidden = true;
+      overlayActions.hidden = false;
+      stage.classList.add("has-image");
+
+      const dogPct = (data.probabilities.dog * 100).toFixed(2);
+      const catPct = (data.probabilities.cat * 100).toFixed(2);
+      const topPct = (data.confidence * 100).toFixed(2);
+
+      verdictTitle.textContent = data.label_es;
+      verdictBadge.textContent = `${topPct}% confianza`;
+      verdictBadge.classList.toggle("is-dog", data.label === "dog");
+
+      barDog.style.width = `${dogPct}%`;
+      barCat.style.width = `${catPct}%`;
+      barDog.classList.toggle("is-muted", data.label !== "dog");
+      barCat.classList.toggle("is-muted", data.label !== "cat");
+
+      pctDog.textContent = `${dogPct}%`;
+      pctCat.textContent = `${catPct}%`;
+
+      emptyGuide.hidden = true;
+      resultBlock.hidden = false;
+      setStatus(`Analizado: ${fileName}`);
+    };
+
+    const renderHistory = () => {
+      if (sessionHistory.length === 0) {
+        historyWrap.hidden = true;
+        return;
+      }
+      historyWrap.hidden = false;
+      historyStrip.replaceChildren();
+
+      sessionHistory.forEach((entry) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "history-chip";
+        chip.title = `${entry.fileName}: ${entry.data.label_es}`;
+
+        const thumb = document.createElement("img");
+        thumb.src = entry.imageUrl;
+        thumb.alt = "";
+
+        const label = document.createElement("span");
+        label.textContent = `${entry.data.label_es} · ${(entry.data.confidence * 100).toFixed(0)}%`;
+
+        chip.append(thumb, label);
+        chip.addEventListener("click", () => {
+          renderResult(entry.imageUrl, entry.data, entry.fileName);
+        });
+        historyStrip.appendChild(chip);
+      });
+    };
+
+    const resetUI = () => {
+      input.value = "";
+      removeStageImage();
+      viewfinder.hidden = false;
+      overlayActions.hidden = true;
+      stage.classList.remove("has-image");
+      resultBlock.hidden = true;
+      emptyGuide.hidden = false;
+      setStatus("Listo para analizar una imagen.");
+    };
+
+    const classifyFile = async (file) => {
+      if (!file || !file.type.startsWith("image/")) {
+        setStatus("Selecciona un archivo de imagen válido (.jpg, .png, .webp).", { error: true });
+        return;
+      }
+
+      const imageUrl = URL.createObjectURL(file);
+      setStageImage(imageUrl);
+      viewfinder.hidden = true;
+      overlayActions.hidden = false;
+      stage.classList.add("has-image");
+      emptyGuide.hidden = true;
+      resultBlock.hidden = true;
+      setStatus(`Analizando "${file.name}" en local…`, { loading: true });
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      try {
+        const response = await fetch("/api/predict", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          setStatus(data.error || "No se pudo analizar la imagen.", { error: true });
+          return;
+        }
+
+        renderResult(imageUrl, data, file.name);
+        sessionHistory.unshift({ imageUrl, data, fileName: file.name });
+        if (sessionHistory.length > 5) {
+          const removed = sessionHistory.pop();
+          URL.revokeObjectURL(removed.imageUrl);
+        }
+        renderHistory();
+      } catch (err) {
+        setStatus("Error de conexión con el servidor local.", { error: true });
+      }
+    };
+
+    browseBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      input.click();
+    });
+
+    changeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      input.click();
+    });
+
+    clearBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      resetUI();
+    });
+
+    stage.addEventListener("click", () => {
+      if (!stage.classList.contains("has-image")) {
+        input.click();
+      }
+    });
+
+    input.addEventListener("change", () => {
+      if (input.files && input.files[0]) {
+        classifyFile(input.files[0]);
+      }
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      stage.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        stage.classList.add("is-dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      stage.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        stage.classList.remove("is-dragover");
+      });
+    });
+
+    stage.addEventListener("drop", (e) => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file) {
+        classifyFile(file);
+      }
+    });
+
+    window.addEventListener("paste", (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            classifyFile(file);
+            break;
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

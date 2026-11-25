@@ -22,6 +22,7 @@ Binary image classifier (**Cat** vs **Dog**) built with **TensorFlow / Keras** a
 - **`src/pipeline.py`** → Modular functions for splitting data, plotting samples, creating `ImageDataGenerator` flows, building/training/evaluating `EfficientNetB0`, and single-image inference.
 - **`src/app.py`** → Main CLI script for training, optimizing, evaluating, and saving the model.
 - **`src/predict.py`** → CLI script to classify a single photo (`Gato` / `Perro`) with confidence scores.
+- **`src/web.py`** & **`src/templates/index.html`** → Local Flask server and web UI to drag-and-drop, paste (`Ctrl+V`), or browse photos on your PC.
 - **`src/explore.ipynb`** → Interactive Jupyter notebook following the project steps.
 - **`src/utils.py`** → Auxiliary database connection utilities (`db_connect`).
 - **`data/`** → `raw/` (original zip & extracted images), `interim/` (`sample_dogs.png`, `sample_cats.png`), and `processed/` (`train/` and `test/` class folders).
@@ -76,11 +77,21 @@ Quick pipeline smoke test on CPU:
 .venv\Scripts\python.exe src\app.py --epochs 1 --steps-per-epoch 10 --validation-steps 10 --eval-steps 10
 ```
 
-### Classify a Single Photo
+### Classify a Single Photo (CLI)
 
 ```powershell
 .venv\Scripts\python.exe src\predict.py path\to\your_photo.jpg
 ```
+
+### Launch the Local Web Interface
+
+Start the local server (loads the model once and processes everything locally on your PC):
+
+```powershell
+.venv\Scripts\python.exe src\web.py
+```
+
+Then open **`http://127.0.0.1:5000`** in your browser to drag-and-drop, paste (`Ctrl+V`), or browse images from your computer.
 
 Example output:
 
